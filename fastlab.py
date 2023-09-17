@@ -2,7 +2,7 @@ import sys
 from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import RedirectResponse, Response
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from enum import Enum
 
 app = FastAPI()
@@ -22,6 +22,14 @@ class BookRequest(BaseModel):
     genre: str
     year: int
     pages: int
+
+
+class BookPatchRequest(BaseModel):
+    name: Optional[str] = None
+    author: Optional[str] = None
+    genre: Optional[str] = None
+    year: Optional[int] = None
+    pages: Optional[int] = None
 
 
 class Book(BookRequest):
@@ -89,6 +97,16 @@ def update_book(id: int, book: BookRequest):
     for index, value in enumerate(books):
         if value.id == id:
             books[index] = Book(id=id, **book.model_dump())
+            return Response(status_code=status.HTTP_200_OK)
+
+    raise HTTPException(404, detail="Book doesn't exist")
+
+
+@app.patch("/books/{id}", response_model=None)
+def patch_book(id: int, book: BookPatchRequest):
+    for index, value in enumerate(books):
+        if value.id == id:
+            books[index].__dict__.update(book.model_dump(exclude_unset=True))
             return Response(status_code=status.HTTP_200_OK)
 
     raise HTTPException(404, detail="Book doesn't exist")
